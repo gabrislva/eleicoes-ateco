@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Votação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="topo">
+  <div class="marca"><span class="selo" data-sigla>V</span><div><span data-org></span><small id="titulo-topo">Votação</small></div></div>
+  <nav class="abas" role="tablist">
+    <button role="tab" id="tab-votar" aria-selected="true" data-rota="votar">Votar</button>
+    <button role="tab" id="tab-resultados" aria-selected="false" data-rota="resultados">Resultados</button>
+  </nav>
+</header>
+
+<!-- ======================= VOTAR ======================= -->
+<main class="coluna" id="pg-votar">
+  <div id="aviso-geral" class="aviso erro" hidden></div>
+
+  <!-- 1. Identificação -->
+  <section class="cartao" id="v-login">
+    <header>
+      <span class="eyebrow" id="v-status-txt">Carregando…</span>
+      <h1 id="v-titulo">Votação</h1>
+      <p>Informe sua identificação e o código pessoal que você recebeu. O voto é secreto: a planilha registra só que você votou, não em quem.</p>
+    </header>
+    <form id="f-login" class="grade" novalidate>
+      <div class="campo"><label for="ident">Identificação</label><input id="ident" autocomplete="off" placeholder="Matrícula ou CPF" required><span class="dica">Do jeito que está no cadastro de votantes.</span></div>
+      <div class="campo"><label for="codigo">Código de votação</label><input id="codigo" class="mono" autocomplete="off" autocapitalize="characters" placeholder="ABC123" maxlength="12" required></div>
+      <div id="erro-login" class="aviso erro inteiro" hidden role="alert"></div>
+      <div class="acoes inteiro"><button class="btn" id="btn-entrar" type="submit">Entrar para votar</button></div>
+    </form>
+  </section>
+
+  <!-- 2. Cédula -->
+  <section class="cartao" id="v-cedula" hidden>
+    <div class="passos" id="passos"></div>
+    <header>
+      <span class="eyebrow" id="c-contador"></span>
+      <h2 class="cargo-titulo" id="c-cargo"></h2>
+      <p id="c-instrucao"></p>
+    </header>
+    <div id="c-candidato"></div>
+    <div class="opcoes" id="c-opcoes" role="radiogroup"></div>
+    <div class="acoes" style="justify-content:space-between">
+      <button class="btn sec" id="c-voltar" type="button">Voltar</button>
+      <button class="btn" id="c-avancar" type="button" disabled>Próximo</button>
+    </div>
+  </section>
+
+  <!-- 3. Revisão -->
+  <section class="cartao" id="v-revisao" hidden>
+    <header>
+      <span class="eyebrow">Confira antes de confirmar</span>
+      <h2 class="cargo-titulo">Seu voto</h2>
+      <p>Depois de confirmar, o voto não pode ser alterado.</p>
+    </header>
+    <div class="revisao" id="r-lista"></div>
+    <div id="erro-voto" class="aviso erro" hidden role="alert"></div>
+    <div class="acoes" style="justify-content:space-between">
+      <button class="btn sec" id="r-voltar" type="button">Voltar</button>
+      <button class="btn" id="r-confirmar" type="button">Confirmar voto</button>
+    </div>
+  </section>
+
+  <!-- 4. Fim -->
+  <section class="cartao" id="v-fim" hidden>
+    <div class="fim">
+      <div class="check" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h2>Voto registrado</h2>
+      <p class="nota">Comprovante de votação</p>
+      <span class="recibo-cod" id="f-recibo"></span>
+      <p class="nota" id="f-retorno"></p>
+      <button class="btn" id="f-sair" type="button">Encerrar</button>
+    </div>
+  </section>
+</main>
+
+<!-- ======================= RESULTADOS ======================= -->
+<main class="largo" id="pg-resultados" hidden>
+  <div style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap">
+    <div style="display:grid;gap:6px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="eyebrow">Painel de resultados</span><span class="status-pill" id="d-status"></span></div>
+      <h1 id="d-titulo">Votação</h1>
+    </div>
+    <div class="acoes"><span class="nota" id="d-atualizado"></span><button class="btn sec peq" id="d-atualizar" type="button">Atualizar</button></div>
+  </div>
+
+  <div id="d-erro" class="aviso erro" hidden role="alert"></div>
+
+  <div class="kpis" id="d-kpis"></div>
+
+  <section class="cartao" id="d-bloqueado" hidden>
+    <header>
+      <h2>Resultado disponível ao encerrar</h2>
+      <p>A apuração aparece aqui quando a votação for encerrada na planilha. A comissão eleitoral pode ver a parcial com a chave de administração.</p>
+    </header>
+    <form id="f-chave" class="filtros" novalidate>
+      <input id="chave-admin" type="password" placeholder="Chave de administração" aria-label="Chave de administração" autocomplete="off">
+      <button class="btn sec" type="submit" style="flex:0 0 auto">Ver parcial</button>
+    </form>
+  </section>
+
+  <div class="cargos-res" id="d-cargos"></div>
+</main>
+
+<script src="config.js"></script>
+<script src="assets/api.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const CFG = window.CONFIG || {};
+  API.aplicarMarca();
+
+  let config = null;            // {titulo, status, percentual, cargos}
+  let sessao = null;            // {identificacao, codigo, nome}
+  let votos = {};               // cargo -> escolha
+  let passo = 0;
+  let timerRetorno = null, timerPainel = null;
+  let chaveAdmin = '';
+
+  /* ---------- Abas / rotas (#votar, #resultados) ---------- */
+  function rota() {
+    const r = location.hash === '#resultados' ? 'resultados' : 'votar';
+    $('pg-votar').hidden = r !== 'votar';
+    $('pg-resultados').hidden = r !== 'resultados';
+    $('tab-votar').setAttribute('aria-selected', r === 'votar');
+    $('tab-resultados').setAttribute('aria-selected', r === 'resultados');
+    clearInterval(timerPainel);
+    if (r === 'resultados') {
+      carregarResultado();
+      const s = Number(CFG.ATUALIZAR_PAINEL_SEG) || 0;
+      if (s > 0) timerPainel = setInterval(() => { if (!document.hidden) carregarResultado(true); }, s * 1000);
+    }
+  }
+  document.querySelectorAll('.abas button').forEach(b => b.addEventListener('click', () => { location.hash = b.dataset.rota; }));
+  window.addEventListener('hashchange', rota);
+
+  /* ---------- Config ---------- */
+  async function carregarConfig() {
+    if (!API.configurado()) {
+      $('aviso-geral').textContent = 'Sistema ainda não configurado: preencha API_URL no arquivo config.js.';
+      $('aviso-geral').hidden = false; $('v-status-txt').textContent = 'Não configurado';
+      return;
+    }
+    try {
+      config = await API.get({ action: 'config' });
+      $('v-titulo').textContent = config.titulo; $('titulo-topo').textContent = config.titulo;
+      document.title = config.titulo;
+      const msg = { Aberta: 'Votação aberta', Fechada: 'Votação ainda não aberta', Encerrada: 'Votação encerrada' };
+      $('v-status-txt').textContent = msg[config.status];
+      const aberta = config.status === 'Aberta';
+      $('btn-entrar').disabled = !aberta;
+      if (!aberta) { $('erro-login').className = 'aviso info inteiro'; $('erro-login').textContent = config.status === 'Encerrada' ? 'A votação terminou. Veja o resultado na aba Resultados.' : 'A votação ainda não começou. Volte no horário divulgado pela comissão.'; $('erro-login').hidden = false; }
+    } catch (e) {
+      $('aviso-geral').textContent = 'Não foi possível carregar a votação: ' + e.message; $('aviso-geral').hidden = false;
+    }
+  }
+
+  /* ---------- Fluxo de votação ---------- */
+  function mostrar(id) { ['v-login', 'v-cedula', 'v-revisao', 'v-fim'].forEach(s => $(s).hidden = s !== id); window.scrollTo({ top: 0 }); }
+
+  $('f-login').addEventListener('submit', async e => {
+    e.preventDefault();
+    const ident = $('ident').value.trim(), cod = $('codigo').value.trim(), box = $('erro-login');
+    box.className = 'aviso erro inteiro';
+    if (!ident || !cod) { box.textContent = 'Preencha a identificação e o código.'; box.hidden = false; return; }
+    $('btn-entrar').disabled = true; $('btn-entrar').textContent = 'Verificando…'; box.hidden = true;
+    try {
+      await carregarConfig();               // pega a lista de cargos mais recente
+      const r = await API.post({ action: 'entrar', identificacao: ident, codigo: cod });
+      if (!config.cargos.length) throw new Error('Nenhum candidato cadastrado ainda.');
+      sessao = { identificacao: ident, codigo: cod, nome: r.nome };
+      votos = {}; passo = 0;
+      renderPasso(); mostrar('v-cedula');
+    } catch (err) { box.textContent = err.message; box.hidden = false; }
+    finally { $('btn-entrar').textContent = 'Entrar para votar'; $('btn-entrar').disabled = !(config && config.status === 'Aberta'); }
+  });
+
+  function renderPasso() {
+    const cg = config.cargos[passo], n = config.cargos.length;
+    $('passos').innerHTML = '';
+    for (let i = 0; i < n; i++) { const s = document.createElement('span'); if (i <= passo) s.className = 'feito'; $('passos').appendChild(s); }
+    $('c-contador').textContent = (passo === 0 && sessao.nome ? 'Olá, ' + sessao.nome + ' · ' : '') + 'Cargo ' + (passo + 1) + ' de ' + n;
+    $('c-cargo').textContent = cg.cargo;
+
+    const cand = $('c-candidato'); cand.innerHTML = '';
+    const ops = $('c-opcoes'); ops.innerHTML = ''; ops.className = 'opcoes';
+
+    if (cg.tipo === 'unico') {
+      const c = cg.candidatos[0];
+      $('c-instrucao').textContent = 'Candidatura única. Você aprova este nome para o cargo?';
+      const box = document.createElement('div'); box.className = 'unico-cand';
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = c.nome + (c.numero ? '  ·  ' + c.numero : '');
+      box.appendChild(nm);
+      if (c.descricao) { const d = document.createElement('span'); d.className = 'ds'; d.textContent = c.descricao; box.appendChild(d); }
+      cand.appendChild(box);
+      ops.classList.add('tres');
+      cg.opcoes.forEach(o => ops.appendChild(botaoOpcao(cg, o, null, o === 'Branco')));
+    } else {
+      $('c-instrucao').textContent = 'Escolha um candidato ou vote em branco.';
+      cg.candidatos.forEach(c => ops.appendChild(botaoOpcao(cg, c.nome, c, false)));
+      ops.appendChild(botaoOpcao(cg, 'Branco', { descricao: 'Não escolher nenhum candidato' }, true));
+    }
+    $('c-voltar').textContent = passo === 0 ? 'Cancelar' : 'Voltar';
+    $('c-avancar').textContent = passo === n - 1 ? 'Revisar voto' : 'Próximo';
+    $('c-avancar').disabled = !votos[cg.cargo];
+  }
+
+  function botaoOpcao(cg, valor, info, branco) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'opcao' + (branco ? ' op-branco' : '');
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(votos[cg.cargo] === valor));
+    const m = document.createElement('span'); m.className = 'marca-op'; b.appendChild(m);
+    const t = document.createElement('span'); t.className = 'txt';
+    const nb = document.createElement('b'); nb.textContent = valor; t.appendChild(nb);
+    if (info && info.descricao) { const sm = document.createElement('small'); sm.textContent = info.descricao; t.appendChild(sm); }
+    b.appendChild(t);
+    if (info && info.numero) { const nu = document.createElement('span'); nu.className = 'numero'; nu.textContent = info.numero; b.appendChild(nu); }
+    b.addEventListener('click', () => {
+      votos[cg.cargo] = valor;
+      $('c-opcoes').querySelectorAll('.opcao').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+      $('c-avancar').disabled = false;
+    });
+    return b;
+  }
+
+  $('c-avancar').addEventListener('click', () => {
+    if (passo < config.cargos.length - 1) { passo++; renderPasso(); }
+    else { renderRevisao(); mostrar('v-revisao'); }
+  });
+  $('c-voltar').addEventListener('click', () => {
+    if (passo > 0) { passo--; renderPasso(); } else sair();
+  });
+
+  function renderRevisao() {
+    const l = $('r-lista'); l.innerHTML = '';
+    config.cargos.forEach((cg, i) => {
+      const row = document.createElement('div');
+      const esq = document.createElement('div'); esq.style.display = 'grid';
+      const c = document.createElement('span'); c.className = 'rc'; c.textContent = cg.cargo;
+      const v = document.createElement('span'); v.className = 'rv';
+      v.textContent = cg.tipo === 'unico' ? votos[cg.cargo] + ' para ' + cg.candidatos[0].nome : votos[cg.cargo];
+      if (votos[cg.cargo] === 'Branco') v.textContent = 'Em branco';
+      esq.append(c, v);
+      const corr = document.createElement('button'); corr.type = 'button'; corr.className = 'linkbtn'; corr.textContent = 'Corrigir';
+      corr.addEventListener('click', () => { passo = i; renderPasso(); mostrar('v-cedula'); });
+      row.append(esq, corr); l.appendChild(row);
+    });
+    $('erro-voto').hidden = true;
+  }
+  $('r-voltar').addEventListener('click', () => { passo = config.cargos.length - 1; renderPasso(); mostrar('v-cedula'); });
+
+  $('r-confirmar').addEventListener('click', async () => {
+    const btn = $('r-confirmar'); btn.disabled = true; btn.textContent = 'Registrando…'; $('erro-voto').hidden = true;
+    try {
+      const r = await API.post({ action: 'votar', identificacao: sessao.identificacao, codigo: sessao.codigo, votos });
+      $('f-recibo').textContent = r.recibo;
+      mostrar('v-fim'); iniciarRetorno();
+    } catch (err) { $('erro-voto').textContent = 'O voto não foi registrado: ' + err.message; $('erro-voto').hidden = false; }
+    finally { btn.disabled = false; btn.textContent = 'Confirmar voto'; }
+  });
+
+  function iniciarRetorno() {
+    let s = Number(CFG.RETORNO_AUTOMATICO_SEG) || 0;
+    if (!s) { $('f-retorno').textContent = ''; return; }
+    const tick = () => { $('f-retorno').textContent = 'A tela volta para o início em ' + s + 's.'; if (s-- <= 0) sair(); };
+    tick(); timerRetorno = setInterval(tick, 1000);
+  }
+
+  function sair() {
+    clearInterval(timerRetorno);
+    sessao = null; votos = {}; passo = 0;
+    $('f-login').reset(); $('erro-login').hidden = true;
+    mostrar('v-login'); carregarConfig();
+  }
+  $('f-sair').addEventListener('click', sair);
+
+  /* ---------- Painel de resultados ---------- */
+  const pct = (a, b) => b ? (a / b) * 100 : 0;
+  const fmtPct = v => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+
+  async function carregarResultado(silencioso) {
+    if (!API.configurado()) { $('d-erro').textContent = 'Sistema ainda não configurado: preencha API_URL em config.js.'; $('d-erro').hidden = false; return; }
+    if (!silencioso) $('d-atualizar').disabled = true;
+    try {
+      const params = { action: 'resultado' }; if (chaveAdmin) params.chave = chaveAdmin;
+      const r = await API.get(params);
+      $('d-erro').hidden = true;
+      renderResultado(r);
+    } catch (e) {
+      if (/chave/i.test(e.message)) chaveAdmin = '';
+      $('d-erro').textContent = e.message; $('d-erro').hidden = false;
+    } finally { $('d-atualizar').disabled = false; }
+  }
+  $('d-atualizar').addEventListener('click', () => carregarResultado());
+  $('f-chave').addEventListener('submit', e => { e.preventDefault(); chaveAdmin = $('chave-admin').value.trim(); if (chaveAdmin) carregarResultado(); });
+
+  function kpi(rot, v, sub) {
+    const d = document.createElement('div'); d.className = 'kpi';
+    const a = document.createElement('span'); a.className = 'eyebrow'; a.textContent = rot;
+    const b = document.createElement('span'); b.className = 'v'; b.textContent = v;
+    const c = document.createElement('span'); c.className = 's'; c.textContent = sub;
+    d.append(a, b, c); return d;
+  }
+
+  function barra(rotulo, votos, base, cls, extra) {
+    const w = document.createElement('div'); w.className = 'barra';
+    const p = pct(votos, base);
+    w.title = rotulo + ': ' + votos + ' voto(s), ' + fmtPct(p);
+    const t = document.createElement('div'); t.className = 'topo-b';
+    const n = document.createElement('span'); n.textContent = rotulo;
+    const v = document.createElement('span'); v.className = 'val';
+    const vb = document.createElement('b'); vb.textContent = votos; v.append(vb, document.createTextNode(' · ' + fmtPct(p)));
+    t.append(n, v);
+    const tr = document.createElement('div'); tr.className = 'trilho';
+    const f = document.createElement('div'); f.className = 'fill ' + cls; f.style.width = Math.min(100, p) + '%';
+    tr.appendChild(f);
+    if (extra) extra(tr);
+    w.append(t, tr); return w;
+  }
+
+  function renderResultado(r) {
+    $('d-titulo').textContent = r.titulo;
+    $('d-status').textContent = r.status === 'Aberta' ? 'Em andamento' : r.status === 'Encerrada' ? 'Encerrada' : 'Não iniciada';
+    $('d-status').className = 'status-pill ' + r.status;
+    $('d-atualizado').textContent = 'Atualizado às ' + (r.atualizadoEm || '').slice(11, 16);
+
+    const p = r.participacao, k = $('d-kpis'); k.innerHTML = '';
+    k.append(
+      kpi('Votaram', p.votaram, 'de ' + p.cadastrados + ' votantes cadastrados (' + fmtPct(pct(p.votaram, p.cadastrados)) + ')'),
+      kpi('Presentes', p.presentes, 'base para candidaturas únicas'),
+      kpi('Faltam votar', Math.max(0, p.presentes - p.votaram), 'presentes que ainda não votaram')
+    );
+
+    $('d-bloqueado').hidden = r.liberado;
+    const box = $('d-cargos'); box.innerHTML = '';
+    if (!r.liberado) return;
+    if (!r.cargos.length) { const v = document.createElement('p'); v.className = 'nota'; v.textContent = 'Nenhum candidato cadastrado.'; box.appendChild(v); return; }
+
+    r.cargos.forEach(c => {
+      const card = document.createElement('section'); card.className = 'cartao';
+      const h = document.createElement('div'); h.className = 'res-head';
+      const tt = document.createElement('div'); tt.style.display = 'grid'; tt.style.gap = '2px';
+      const e = document.createElement('span'); e.className = 'eyebrow'; e.textContent = c.tipo === 'unico' ? 'Candidatura única' : c.candidatos.length + ' candidatos';
+      const h2 = document.createElement('h2'); h2.textContent = c.cargo;
+      tt.append(e, h2);
+      const ver = document.createElement('span'); ver.className = 'veredito';
+      const barras = document.createElement('div'); barras.className = 'barras';
+      const nota = document.createElement('p'); nota.className = 'nota';
+
+      if (c.tipo === 'unico') {
+        const base = p.presentes;
+        const final = r.status === 'Encerrada';
+        ver.classList.add(c.aprovado ? 'sim' : 'nao');
+        ver.textContent = (c.aprovado ? (final ? 'Aprovado' : 'Atingindo a meta') : (final ? 'Não aprovado' : 'Abaixo da meta'));
+        const nm = document.createElement('p'); nm.style.margin = '0'; nm.style.fontWeight = '600'; nm.textContent = c.candidato.nome;
+        barras.append(
+          barra('Sim', c.votos['Sim'], base, 'f-sim', tr => {
+            const m = document.createElement('div'); m.className = 'meta'; m.style.left = 'calc(' + r.percentual + '% - 1px)';
+            m.title = 'Meta: ' + r.percentual + '% dos presentes'; tr.appendChild(m);
+          }),
+          barra('Não', c.votos['Não'], base, 'f-nao'),
+          barra('Branco', c.votos['Branco'], base, 'f-branco')
+        );
+        nota.textContent = 'Percentuais sobre ' + base + ' presentes. A linha vertical marca a meta de ' + r.percentual + '% de "Sim" (' + Math.ceil(base * r.percentual / 100) + ' votos).';
+        card.append(h, nm, barras, nota);
+      } else {
+        if (c.empate) { ver.classList.add('emp'); ver.textContent = 'Empate'; }
+        else if (c.vencedor) { ver.classList.add('sim'); ver.textContent = (r.status === 'Encerrada' ? 'Eleito: ' : 'Liderando: ') + c.vencedor; }
+        else { ver.hidden = true; }
+        c.candidatos.forEach((x, i) => barras.appendChild(barra(x.nome + (x.numero ? ' · ' + x.numero : ''), x.votos, c.total, 'f-cand' + (i === 0 && x.votos > 0 ? ' lider' : ''))));
+        barras.appendChild(barra('Branco', c.brancos, c.total, 'f-branco'));
+        nota.textContent = c.total + ' votos no cargo · ' + c.validos + ' em candidatos. Vence quem tiver mais votos.';
+        card.append(h, barras, nota);
+      }
+      h.append(tt, ver);
+      box.appendChild(card);
+    });
+  }
+
+  carregarConfig();
+  rota();
+})();
+</script>
+</body>
+</html>
