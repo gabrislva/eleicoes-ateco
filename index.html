@@ -124,8 +124,7 @@
         <p id="conf-txt">A lista com cada código de votação e o voto correspondente fica disponível aqui quando o secretário liberar.</p>
       </header>
       <div class="acoes" id="conf-botoes" hidden>
-        <button class="btn" id="baixar-xml" type="button">⬇ Baixar planilha (.xml)</button>
-        <button class="btn sec" id="baixar-csv" type="button">⬇ Baixar .csv</button>
+        <button class="btn" id="baixar-csv" type="button">⬇ Baixar planilha (.csv)</button>
       </div>
       <div id="erro-conf" class="aviso erro" hidden role="alert"></div>
     </section>
@@ -523,7 +522,6 @@
     const a = document.createElement('a'); a.href = url; a.download = nome;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  $('baixar-xml').addEventListener('click', e => baixarConferencia('xml', e.currentTarget));
   $('baixar-csv').addEventListener('click', e => baixarConferencia('csv', e.currentTarget));
 
   function kpi(rot, v, sub) {
