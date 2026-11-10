@@ -28,7 +28,7 @@ Assim, quem está na assembleia e não vota conta contra a aprovação de candid
 2. Abra **Extensões → Apps Script**, cole todo o conteúdo de `apps-script/Code.gs` e salve.
 3. Selecione a função **configurar** e clique em **Executar**. Autorize quando pedir. Serão criadas as abas:
 
-   - **Config:** título, status (*Fechada / Aberta / Encerrada*), percentual mínimo e se mostra a parcial
+   - **Config:** título, status (*Fechada / Aberta / Encerrada*), percentual mínimo e se o arquivo de conferência está liberado
    - **Candidatos:** `Cargo | Nome | Número | Descrição | Foto`. Um cargo com uma única linha vira candidatura única (Sim/Não/Branco). Com duas ou mais linhas, vira disputa.
    - **Votantes:** `Nome | Identificação | E-mail | Código | Presente | Votou em`
    - **Votos:** preenchida automaticamente. Não edite.
@@ -37,7 +37,9 @@ Assim, quem está na assembleia e não vota conta contra a aprovação de candid
 5. Cadastre os votantes, preenchendo **Nome**, **Identificação** (matrícula ou CPF) e **E-mail**.
 6. Rode a função **gerarCodigos**, que cria um código de 6 caracteres por votante.
    - Para enviar os códigos por e-mail, rode **enviarCodigosPorEmail**. Antes, se quiser que o e-mail leve o link da votação, crie em *Propriedades do script* a propriedade `LINK_SITE` com o endereço do site.
-7. Em **⚙ Configurações do projeto → Propriedades do script**, anote a `CHAVE_ADMIN`. Ela permite à comissão ver a parcial.
+7. Em **⚙ Configurações do projeto → Propriedades do script**, anote a `CHAVE_ADMIN`. Esta é a **chave do secretário**: só com ela é possível abrir a apuração. Você pode trocá-la por outra senha ali mesmo.
+
+> **Atualizando o script?** Depois de colar um `Code.gs` novo, rode **configurar** de novo. Ele não apaga nada: só cria o que estiver faltando (abas, colunas como *Foto*, parâmetros novos da aba Config) e atualiza os cabeçalhos.
 8. Vá em **Implantar → Nova implantação → App da Web** e configure *Executar como: **Eu*** e *Quem pode acessar: **Qualquer pessoa***. Copie a URL que termina em `/exec`.
 
 ### Fotos dos candidatos
@@ -48,8 +50,6 @@ A coluna **Foto** aceita duas formas:
 - **Link do Google Drive:** compartilhe a foto como *Qualquer pessoa com o link* e cole o link na célula.
 
 Prefira fotos quadradas, de uns 400×400 px. Se a célula ficar vazia ou o arquivo não for encontrado, aparecem as iniciais do candidato no lugar.
-
-> Se a sua planilha foi criada antes desta versão, escreva **Foto** na célula **E1** da aba Candidatos.
 
 ## Passo 2 · Front-end
 
@@ -62,18 +62,33 @@ Prefira fotos quadradas, de uns 400×400 px. Se a célula ficar vazia ou o arqui
 
 ## No dia da votação
 
-1. **Abrir:** na aba *Config*, mude o **Status** para `Aberta`.
+1. **Abrir:** na aba *Config*, mude o **Status** para `Aberta`. As telas de votação já abertas se atualizam sozinhas em até 15 segundos.
 2. **Presença:** quem está presente mas ainda não votou pode ser marcado com `Sim` na coluna *Presente*. Quem vota é marcado automaticamente.
-3. **Acompanhar:** a aba *Resultados* mostra em tempo real quantos votaram e quantos estão presentes. O painel se atualiza a cada 20 segundos.
-   - Durante a votação, os resultados ficam ocultos. A comissão vê a parcial digitando a `CHAVE_ADMIN` no painel. Para deixar a parcial pública, mude *Mostrar resultado parcial* para `Sim`.
-4. **Encerrar:** mude o **Status** para `Encerrada`. O resultado fica público no painel e novos votos são bloqueados.
+3. **Acompanhar:** a aba *Resultados* mostra a todos, em tempo real, quantos votaram e quantos estão presentes. O painel se atualiza a cada 20 segundos.
+4. **Encerrar:** mude o **Status** para `Encerrada`. Em até 15 segundos, todas as telas de votação travam e mostram "A votação foi encerrada". Quem estiver no meio do voto volta para o início, e o servidor recusa qualquer voto enviado depois disso.
 
-### Quadro de resultados
+### Apuração (só o secretário)
 
-Abaixo dos números de participação, os resultados aparecem **um cargo por vez**, num quadro grande:
+Na aba *Resultados*, abaixo dos números, fica o bloco **Apuração**:
 
-- **Navegar:** use as setas ou os pontinhos. No teclado, ← e →. No celular, deslize para o lado.
-- **▶ Passar sozinho:** troca de cargo a cada 10 segundos, bom para projetar num telão. O tempo fica em `PASSAR_RESULTADOS_SEG` no `config.js`. Para o painel já abrir passando sozinho, use `PASSAR_AUTOMATICO: true`.
+1. O secretário digita a **chave do secretário** (`CHAVE_ADMIN`) e clica em **Abrir apuração**. Funciona durante ou depois da votação.
+2. Abre uma tela própria, **sem os números de participação**, que mostra um cargo por vez num quadro grande.
+3. **Navegar:** use as setas ou os pontinhos. No teclado, ← e →. No celular, deslize para o lado.
+4. **▶ Passar sozinho** troca de cargo a cada 10 segundos (`PASSAR_RESULTADOS_SEG`). **⛶ Tela cheia** esconde o navegador. **Sair** volta para a aba Resultados.
+
+A apuração se atualiza sozinha a cada 20 segundos. A chave fica guardada só naquela aba do navegador: ao fechar a aba, é preciso digitar de novo.
+
+### Arquivo de conferência
+
+Para cada pessoa conferir o próprio voto:
+
+1. Na aba *Config*, mude **Liberar arquivo de conferência** para `Sim`.
+2. Na aba *Resultados* aparecem os botões **Baixar planilha (.xml)** e **Baixar .csv**.
+3. O arquivo tem uma linha por votante, com o **código de votação** e o voto em cada cargo ao lado. Não aparece nome nem identificação. Cada pessoa procura o próprio código.
+
+O `.xml` abre direto no Excel e no LibreOffice. O `.csv` abre em qualquer programa de planilha, inclusive no Google Planilhas.
+
+> Atenção: quem souber o código de outra pessoa consegue ver o voto dela nesse arquivo. Libere só depois de encerrar a votação.
 
 ### Som
 

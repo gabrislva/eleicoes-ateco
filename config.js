@@ -13,7 +13,11 @@ window.CONFIG = {
   // Modo urna: após votar, a tela volta sozinha para a identificação (segundos). 0 = desligado
   RETORNO_AUTOMATICO_SEG: 8,
 
-  // Atualização automática do painel de resultados (segundos)
+  // A tela de votar confere o status na planilha a cada X segundos
+  // (abre sozinha quando você muda para "Aberta" e trava quando muda para "Encerrada")
+  ATUALIZAR_STATUS_SEG: 15,
+
+  // Atualização automática do painel de resultados e da apuração (segundos)
   ATUALIZAR_PAINEL_SEG: 20,
 
   // Quadro de resultados: tempo de cada cargo no "Passar sozinho" (segundos)

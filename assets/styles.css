@@ -311,3 +311,39 @@ input:focus { background: #fff; outline: none; box-shadow: 0 0 0 4px var(--red-s
   .rank.branco { grid-template-columns: 28px minmax(0, 1fr); }
   .slide { border-radius: 22px; box-shadow: 5px 5px 0 var(--ink); }
 }
+
+/* ---------- Blocos abaixo dos números: apuração + conferência ---------- */
+.acoes-res { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 760px) { .acoes-res { grid-template-columns: 1fr; } }
+.bloco-apuracao { background: var(--ink); color: #fff; }
+.bloco-apuracao .eyebrow { color: var(--amarelo); }
+.bloco-apuracao > header p { color: #d9cfd0; }
+.bloco-apuracao input { background: #2a1d20; color: #fff; border-color: #fff; }
+.bloco-apuracao input:focus { background: #2a1d20; border-color: var(--red); }
+.bloco-apuracao input::placeholder { color: #8f8285; }
+.grade-chave { display: flex; gap: 12px; flex-wrap: wrap; }
+.grade-chave input { flex: 1 1 200px; min-width: 0; }
+.grade-chave .btn { flex: 0 0 auto; }
+.bloco-apuracao .btn { box-shadow: 3px 3px 0 #fff; border-color: #fff; }
+
+/* ---------- Modo apuração: tela cheia, sem números de participação ---------- */
+body.modo-apuracao .topo-wrap, body.modo-apuracao .faixa { display: none; }
+body.modo-apuracao { padding-block: 0; }
+.apuracao { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: inherit; }
+.ap-topo {
+  background: var(--red); border-bottom: var(--borda);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-block: 12px;
+}
+.ap-topo .car-barra { justify-content: flex-end; }
+.ap-topo .seta { width: 42px; height: 42px; }
+.ap-topo .ponto-nav { background: #fff; }
+.ap-topo .ponto-nav[aria-current="true"] { background: var(--amarelo); }
+.ap-palco { display: grid; place-items: center; align-content: center; gap: 16px; padding-block: 28px 40px; }
+.ap-palco .slide { width: min(100%, 78vh, 860px); }
+.ap-palco .aviso { width: min(100%, 860px); }
+@media (max-width: 640px) {
+  .ap-topo { justify-content: center; }
+  .ap-topo .car-barra { justify-content: center; }
+  .ap-palco .slide { width: 100%; }
+}

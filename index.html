@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Mono:wght@500&family=DM+Sans:opsz,wght@9..40,400..700&display=swap">
-<link rel="stylesheet" href="assets/styles.css?v=5">
+<link rel="stylesheet" href="assets/styles.css?v=6">
 </head>
 <body>
 <div class="topo-wrap gutter">
@@ -101,31 +101,63 @@
 
   <div class="kpis" id="d-kpis"></div>
 
-  <section class="cartao" id="d-bloqueado" hidden>
-    <header>
-      <h2>Resultado disponível ao encerrar</h2>
-      <p>A apuração aparece aqui quando a votação for encerrada na planilha. A comissão eleitoral pode ver a parcial com a chave de administração.</p>
-    </header>
-    <form id="f-chave" class="filtros" novalidate>
-      <input id="chave-admin" type="password" placeholder="Chave de administração" aria-label="Chave de administração" autocomplete="off">
-      <button class="btn sec" type="submit" style="flex:0 0 auto">Ver parcial</button>
-    </form>
-  </section>
+  <div class="acoes-res">
+    <!-- Abrir apuração (só secretário) -->
+    <section class="cartao bloco-apuracao">
+      <header>
+        <span class="eyebrow">Só para o secretário</span>
+        <h2>Apuração</h2>
+        <p>Abre os resultados em tela cheia, um cargo por vez. Funciona durante ou depois da votação.</p>
+      </header>
+      <form id="f-chave" class="grade-chave" novalidate>
+        <input id="chave-admin" type="password" placeholder="Chave do secretário" aria-label="Chave do secretário" autocomplete="off">
+        <button class="btn" id="btn-apuracao" type="submit">Abrir apuração →</button>
+      </form>
+      <div id="erro-chave" class="aviso erro" hidden role="alert"></div>
+    </section>
 
-  <section class="carrossel" id="d-carrossel" hidden aria-roledescription="carrossel" aria-label="Resultado por cargo">
+    <!-- Arquivo de conferência (liberado pelo secretário na planilha) -->
+    <section class="cartao bloco-conferencia">
+      <header>
+        <span class="eyebrow">Conferência</span>
+        <h2>Confira seu voto</h2>
+        <p id="conf-txt">A lista com cada código de votação e o voto correspondente fica disponível aqui quando o secretário liberar.</p>
+      </header>
+      <div class="acoes" id="conf-botoes" hidden>
+        <button class="btn" id="baixar-xml" type="button">⬇ Baixar planilha (.xml)</button>
+        <button class="btn sec" id="baixar-csv" type="button">⬇ Baixar .csv</button>
+      </div>
+      <div id="erro-conf" class="aviso erro" hidden role="alert"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ======================= APURAÇÃO (tela cheia, sem números de participação) ======================= -->
+<div class="apuracao" id="pg-apuracao" hidden>
+  <header class="ap-topo gutter">
+    <div class="marca">
+      <img class="logo" data-logo alt="Logo" hidden>
+      <span class="selo" data-sigla>V</span>
+      <div class="txt"><b id="ap-titulo">Apuração</b><small id="ap-atualizado">Carregando…</small></div>
+    </div>
     <div class="car-barra">
       <button class="seta" id="d-ant" type="button" aria-label="Cargo anterior">←</button>
       <div class="pontos" id="d-pontos"></div>
       <button class="seta" id="d-prox" type="button" aria-label="Próximo cargo">→</button>
       <button class="btn sec peq" id="d-auto" type="button" aria-pressed="false">▶ Passar sozinho</button>
+      <button class="btn sec peq" id="ap-tela" type="button">⛶ Tela cheia</button>
+      <button class="btn peq" id="ap-sair" type="button">Sair</button>
     </div>
+  </header>
+  <div class="ap-palco gutter">
+    <div id="ap-erro" class="aviso erro" hidden role="alert"></div>
     <div class="slide" id="d-slide" aria-live="polite"></div>
-  </section>
-  <p class="nota" id="d-vazio" hidden>Nenhum candidato cadastrado.</p>
-</main>
+    <p class="nota" id="d-vazio" hidden>Nenhum candidato cadastrado.</p>
+  </div>
+</div>
 
-<script src="config.js?v=5"></script>
-<script src="assets/api.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="assets/api.js?v=6"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -137,20 +169,28 @@
   let votos = {};               // cargo -> escolha
   let passo = 0;
   let timerRetorno = null, timerPainel = null;
+  // Chave do secretário: fica só nesta aba do navegador
   let chaveAdmin = '';
+  try { chaveAdmin = sessionStorage.getItem('vot-chave') || ''; } catch (e) {}
+  function guardarChave(k) { chaveAdmin = k; try { k ? sessionStorage.setItem('vot-chave', k) : sessionStorage.removeItem('vot-chave'); } catch (e) {} }
 
-  /* ---------- Abas / rotas (#votar, #resultados) ---------- */
+  /* ---------- Abas / rotas (#votar, #resultados, #apuracao) ---------- */
   function rota() {
-    const r = location.hash === '#resultados' ? 'resultados' : 'votar';
+    let r = location.hash === '#resultados' ? 'resultados' : location.hash === '#apuracao' ? 'apuracao' : 'votar';
+    if (r === 'apuracao' && !chaveAdmin) { location.replace('#resultados'); return; }
     $('pg-votar').hidden = r !== 'votar';
     $('pg-resultados').hidden = r !== 'resultados';
+    $('pg-apuracao').hidden = r !== 'apuracao';
+    document.body.classList.toggle('modo-apuracao', r === 'apuracao');
     $('tab-votar').setAttribute('aria-selected', r === 'votar');
-    $('tab-resultados').setAttribute('aria-selected', r === 'resultados');
+    $('tab-resultados').setAttribute('aria-selected', r !== 'votar');
     clearInterval(timerPainel);
-    if (r === 'resultados') {
+    if (r !== 'apuracao') ligarAuto(false);
+    if (r === 'resultados' || r === 'apuracao') {
       carregarResultado();
       const s = Number(CFG.ATUALIZAR_PAINEL_SEG) || 0;
       if (s > 0) timerPainel = setInterval(() => { if (!document.hidden) carregarResultado(true); }, s * 1000);
+      if (r === 'apuracao' && CFG.PASSAR_AUTOMATICO) ligarAuto(true);
     }
   }
   document.querySelectorAll('.abas button').forEach(b => b.addEventListener('click', () => { location.hash = b.dataset.rota; }));
@@ -173,11 +213,35 @@
       faixa(config.titulo, msg[config.status]);
       const aberta = config.status === 'Aberta';
       $('btn-entrar').disabled = !aberta;
-      if (!aberta) { $('erro-login').className = 'aviso info inteiro'; $('erro-login').textContent = config.status === 'Encerrada' ? 'A votação terminou. Veja o resultado na aba Resultados.' : 'A votação ainda não começou. Volte no horário divulgado pela comissão.'; $('erro-login').hidden = false; }
+      const box = $('erro-login');
+      if (!aberta) {
+        box.className = 'aviso info inteiro';
+        box.textContent = config.status === 'Encerrada' ? 'A votação foi encerrada. Obrigado pela participação!' : 'A votação ainda não começou. Esta tela se atualiza sozinha quando abrir.';
+        box.hidden = false;
+      } else if (box.classList.contains('info')) {
+        box.hidden = true;   // abriu: some o aviso de "ainda não começou"
+      }
+      $('aviso-geral').hidden = true;
     } catch (e) {
       $('aviso-geral').textContent = 'Não foi possível carregar a votação: ' + e.message; $('aviso-geral').hidden = false;
     }
   }
+
+  /* ---------- Atualização automática do status (abrir / encerrar na planilha) ---------- */
+  async function verificarStatus() {
+    if (!API.configurado() || document.hidden || $('pg-votar').hidden) return;
+    if (sessao) {
+      // No meio do voto: só confere o status, sem trocar a lista de cargos
+      try {
+        const c = await API.get({ action: 'config' });
+        if (c.status !== 'Aberta' && sessao && $('v-fim').hidden) sair();   // volta ao início com o aviso "encerrada"
+      } catch (e) { /* tenta de novo na próxima rodada */ }
+      return;
+    }
+    if (!$('v-login').hidden && !$('btn-entrar').textContent.includes('Verificando')) carregarConfig();
+  }
+  setInterval(verificarStatus, (Number(CFG.ATUALIZAR_STATUS_SEG) || 15) * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) verificarStatus(); });
 
   /* ---------- Faixa e confete ---------- */
   function faixa(titulo, status) {
@@ -384,18 +448,83 @@
   async function carregarResultado(silencioso) {
     if (!API.configurado()) { $('d-erro').textContent = 'Sistema ainda não configurado: preencha API_URL em config.js.'; $('d-erro').hidden = false; return; }
     if (!silencioso) $('d-atualizar').disabled = true;
+    const naApuracao = !$('pg-apuracao').hidden;
     try {
-      const params = { action: 'resultado' }; if (chaveAdmin) params.chave = chaveAdmin;
+      const params = { action: 'resultado' }; if (naApuracao && chaveAdmin) params.chave = chaveAdmin;
       const r = await API.get(params);
-      $('d-erro').hidden = true;
+      $('d-erro').hidden = true; $('ap-erro').hidden = true;
       renderResultado(r);
     } catch (e) {
-      if (/chave/i.test(e.message)) chaveAdmin = '';
-      $('d-erro').textContent = e.message; $('d-erro').hidden = false;
+      if (/chave/i.test(e.message)) { guardarChave(''); if (naApuracao) { location.hash = 'resultados'; mostrarErroChave(e.message); return; } }
+      const alvo = naApuracao ? $('ap-erro') : $('d-erro');
+      alvo.textContent = e.message; alvo.hidden = false;
     } finally { $('d-atualizar').disabled = false; }
   }
   $('d-atualizar').addEventListener('click', () => carregarResultado());
-  $('f-chave').addEventListener('submit', e => { e.preventDefault(); chaveAdmin = $('chave-admin').value.trim(); if (chaveAdmin) carregarResultado(); });
+
+  function mostrarErroChave(msg) { $('erro-chave').textContent = msg; $('erro-chave').hidden = false; }
+
+  // Abrir apuração: confere a chave antes de entrar
+  $('f-chave').addEventListener('submit', async e => {
+    e.preventDefault();
+    const k = $('chave-admin').value.trim(), btn = $('btn-apuracao');
+    $('erro-chave').hidden = true;
+    if (!k) { mostrarErroChave('Digite a chave do secretário.'); return; }
+    btn.disabled = true; btn.textContent = 'Conferindo…';
+    try {
+      await API.get({ action: 'resultado', chave: k });
+      guardarChave(k); $('chave-admin').value = '';
+      slideIdx = 0; location.hash = 'apuracao';
+    } catch (err) { mostrarErroChave(err.message); }
+    finally { btn.disabled = false; btn.textContent = 'Abrir apuração →'; }
+  });
+
+  $('ap-sair').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    location.hash = 'resultados';
+  });
+  $('ap-tela').addEventListener('click', () => {
+    const el = document.documentElement;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  });
+
+  /* ---------- Arquivo de conferência (código de votação + voto) ---------- */
+  async function baixarConferencia(formato, btn) {
+    const txt = btn.textContent; btn.disabled = true; btn.textContent = 'Gerando…'; $('erro-conf').hidden = true;
+    try {
+      const params = { action: 'conferencia' }; if (chaveAdmin) params.chave = chaveAdmin;
+      const d = await API.get(params);
+      const cab = ['Código de votação'].concat(d.cargos);
+      const linhas = d.linhas.map(l => [l.codigo].concat(d.cargos.map(c => l.votos[c] || '')));
+      const nome = 'conferencia-votos-' + (d.geradoEm || '').slice(0, 10);
+      if (formato === 'xml') salvar(nome + '.xml', planilhaXML(d.titulo, cab, linhas), 'application/xml');
+      else salvar(nome + '.csv', '﻿' + [cab].concat(linhas).map(r => r.map(csv).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+    } catch (err) { $('erro-conf').textContent = err.message; $('erro-conf').hidden = false; }
+    finally { btn.disabled = false; btn.textContent = txt; }
+  }
+  function csv(v) { let s = String(v == null ? '' : v); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }
+  function xmlEsc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  // Planilha XML do Excel (SpreadsheetML): abre direto no Excel e no LibreOffice
+  function planilhaXML(titulo, cab, linhas) {
+    const cel = (v, est) => '<Cell' + (est ? ' ss:StyleID="' + est + '"' : '') + '><Data ss:Type="String">' + xmlEsc(v) + '</Data></Cell>';
+    const row = (r, est) => '<Row>' + r.map(v => cel(v, est)).join('') + '</Row>';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n' +
+      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+      '<Styles><Style ss:ID="t"><Font ss:Bold="1" ss:Size="14"/></Style><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#E5112B" ss:Pattern="Solid"/></Style></Styles>' +
+      '<Worksheet ss:Name="Conferência"><Table>' +
+      cab.map(() => '<Column ss:Width="150"/>').join('') +
+      row([titulo + ' — conferência de votos'], 't') + '<Row/>' +
+      row(cab, 'h') + linhas.map(r => row(r)).join('') +
+      '</Table></Worksheet></Workbook>';
+  }
+  function salvar(nome, conteudo, tipo) {
+    const url = URL.createObjectURL(new Blob([conteudo], { type: tipo }));
+    const a = document.createElement('a'); a.href = url; a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  $('baixar-xml').addEventListener('click', e => baixarConferencia('xml', e.currentTarget));
+  $('baixar-csv').addEventListener('click', e => baixarConferencia('csv', e.currentTarget));
 
   function kpi(rot, v, sub) {
     const d = document.createElement('div'); d.className = 'kpi';
@@ -434,11 +563,20 @@
       kpi('Faltam votar', Math.max(0, p.presentes - p.votaram), 'presentes que ainda não votaram')
     );
 
-    $('d-bloqueado').hidden = r.liberado;
+    // Conferência
+    $('conf-botoes').hidden = !r.conferenciaLiberada;
+    $('conf-txt').textContent = r.conferenciaLiberada
+      ? 'Baixe a lista com cada código de votação e o voto ao lado. Procure o seu código para conferir que seu voto foi registrado.'
+      : 'A lista com cada código de votação e o voto correspondente fica disponível aqui quando o secretário liberar.';
+
+    // Apuração (só chega com a chave)
+    $('ap-titulo').textContent = r.titulo;
+    $('ap-atualizado').textContent = 'Apuração · atualizado às ' + (r.atualizadoEm || '').slice(11, 16);
+    if (!r.liberado) return;
     ultimo = r;
-    const temCargos = r.liberado && r.cargos && r.cargos.length;
-    $('d-carrossel').hidden = !temCargos;
-    $('d-vazio').hidden = !(r.liberado && r.cargos && !r.cargos.length);
+    const temCargos = r.cargos && r.cargos.length;
+    $('d-slide').hidden = !temCargos;
+    $('d-vazio').hidden = !!temCargos;
     if (!temCargos) return;
     if (slideIdx >= r.cargos.length) slideIdx = 0;
     renderSlide();
@@ -528,7 +666,7 @@
   $('d-ant').addEventListener('click', () => irPara(slideIdx - 1, true));
   $('d-prox').addEventListener('click', () => irPara(slideIdx + 1, true));
   document.addEventListener('keydown', e => {
-    if ($('pg-resultados').hidden || /input|textarea/i.test(document.activeElement.tagName)) return;
+    if ($('pg-apuracao').hidden || /input|textarea/i.test(document.activeElement.tagName)) return;
     if (e.key === 'ArrowRight') irPara(slideIdx + 1, true);
     if (e.key === 'ArrowLeft') irPara(slideIdx - 1, true);
   });
@@ -544,12 +682,11 @@
   function ligarAuto(on) {
     clearInterval(timerAuto); timerAuto = null;
     const seg = Number(CFG.PASSAR_RESULTADOS_SEG) || 10;
-    if (on) timerAuto = setInterval(() => { if (!document.hidden && !$('pg-resultados').hidden) irPara(slideIdx + 1); }, seg * 1000);
+    if (on) timerAuto = setInterval(() => { if (!document.hidden && !$('pg-apuracao').hidden) irPara(slideIdx + 1); }, seg * 1000);
     $('d-auto').setAttribute('aria-pressed', String(!!on));
     $('d-auto').textContent = on ? '❚❚ Pausar' : '▶ Passar sozinho';
   }
   $('d-auto').addEventListener('click', () => ligarAuto(!timerAuto));
-  if (Number(CFG.PASSAR_RESULTADOS_SEG) > 0 && CFG.PASSAR_AUTOMATICO) ligarAuto(true);
 
   carregarConfig();
   rota();
