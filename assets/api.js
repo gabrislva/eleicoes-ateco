@@ -51,6 +51,14 @@
     document.querySelectorAll('[data-org]').forEach(el => { el.textContent = cfg.NOME_ORGANIZACAO || ''; });
     const ini = (cfg.NOME_ORGANIZACAO || 'R').trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
     document.querySelectorAll('[data-sigla]').forEach(el => { el.textContent = ini; });
+    // Logo: usa o arquivo de config.js; se não existir, fica a sigla
+    document.querySelectorAll('img[data-logo]').forEach(img => {
+      const sigla = img.parentElement.querySelector('[data-sigla]');
+      if (!cfg.LOGO) { img.hidden = true; return; }
+      img.onload = () => { img.hidden = false; if (sigla) sigla.hidden = true; };
+      img.onerror = () => { img.hidden = true; if (sigla) sigla.hidden = false; };
+      img.src = cfg.LOGO;
+    });
   }
 
   window.API = { get, post, configurado, dinheiro, dataBR, arquivoParaBase64, aplicarMarca };

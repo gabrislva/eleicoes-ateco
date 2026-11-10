@@ -18,7 +18,7 @@ Custo: R$ 0.
 **Presentes** = quem votou + quem estiver marcado com **Sim** na coluna *Presente* da aba Votantes.
 Assim, quem está na assembleia e não vota conta contra a aprovação de candidatura única. Se ninguém marcar presença manualmente, a base passa a ser só quem votou.
 
-**Voto secreto:** a aba *Votantes* registra apenas **que** a pessoa votou, com a data. Os votos ficam na aba *Votos*, sem nome e inseridos em posição aleatória, para que a ordem das linhas não revele quem votou em quem.
+**Registro dos votos:** a aba *Votos* guarda uma linha por cargo com a **identificação do votante**, o cargo e o voto. Assim é fácil conferir na planilha que o voto de alguém foi registrado: basta filtrar pela identificação. Como a planilha mostra em quem cada pessoa votou, o acesso a ela deve ficar restrito.
 
 ---
 
@@ -65,7 +65,7 @@ Use um computador ou tablet com a página aberta. Depois de cada voto, a tela vo
 
 - **Códigos:** cada código vale um único voto. Se alguém perder o código, apague a célula e rode `gerarCodigos` de novo. Só os códigos vazios são gerados.
 - **Correções:** não edite a aba *Votos* nem apague *Votou em* durante a votação. Isso libera um segundo voto.
-- **Quem tem acesso à planilha:** o dono vê quem votou, mas não em quem. Restrinja o acesso à comissão eleitoral.
+- **Quem tem acesso à planilha:** quem abrir a planilha vê o voto de cada pessoa. Não compartilhe a planilha.
 - **Capacidade:** o Google processa um voto por vez, levando cerca de 1 a 2 segundos cada. Atende bem assembleias de algumas centenas de pessoas. Se houver fila, o sistema espera até 30 segundos antes de dar erro, e o votante pode tentar de novo.
 - **Alterações no código:** depois de mudar o `Code.gs`, vá em **Implantar → Gerenciar implantações → Editar → Nova versão** para manter a mesma URL.
 - **Validade:** este sistema serve para votações internas de associações. Para eleições com exigência legal ou estatutária de auditoria, confira o estatuto da entidade.

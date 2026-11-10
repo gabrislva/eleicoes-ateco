@@ -6,34 +6,41 @@
 <title>Votação</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Mono:wght@500&family=DM+Sans:opsz,wght@9..40,400..700&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-<header class="topo">
-  <div class="marca"><span class="selo" data-sigla>V</span><div><span data-org></span><small id="titulo-topo">Votação</small></div></div>
-  <nav class="abas" role="tablist">
-    <button role="tab" id="tab-votar" aria-selected="true" data-rota="votar">Votar</button>
-    <button role="tab" id="tab-resultados" aria-selected="false" data-rota="resultados">Resultados</button>
-  </nav>
-</header>
+<div class="topo-wrap gutter">
+  <header class="topo">
+    <div class="marca">
+      <img class="logo" data-logo alt="Logo" hidden>
+      <span class="selo" data-sigla>V</span>
+      <div class="txt"><b data-org></b><small id="titulo-topo">Votação</small></div>
+    </div>
+    <nav class="abas" role="tablist">
+      <button role="tab" id="tab-votar" aria-selected="true" data-rota="votar">Votar</button>
+      <button role="tab" id="tab-resultados" aria-selected="false" data-rota="resultados">Resultados</button>
+    </nav>
+  </header>
+</div>
+<div class="faixa" aria-hidden="true"><div class="faixa-trilho" id="faixa"></div></div>
 
 <!-- ======================= VOTAR ======================= -->
-<main class="coluna" id="pg-votar">
+<main class="coluna gutter" id="pg-votar">
   <div id="aviso-geral" class="aviso erro" hidden></div>
 
   <!-- 1. Identificação -->
   <section class="cartao" id="v-login">
     <header>
-      <span class="eyebrow" id="v-status-txt">Carregando…</span>
+      <span class="tag" id="v-status"><span class="ponto"></span><span id="v-status-txt">Carregando…</span></span>
       <h1 id="v-titulo">Votação</h1>
-      <p>Informe sua identificação e o código pessoal que você recebeu. O voto é secreto: a planilha registra só que você votou, não em quem.</p>
+      <p>Informe sua identificação e o código pessoal que você recebeu. Leva menos de um minuto.</p>
     </header>
     <form id="f-login" class="grade" novalidate>
       <div class="campo"><label for="ident">Identificação</label><input id="ident" autocomplete="off" placeholder="Matrícula ou CPF" required><span class="dica">Do jeito que está no cadastro de votantes.</span></div>
       <div class="campo"><label for="codigo">Código de votação</label><input id="codigo" class="mono" autocomplete="off" autocapitalize="characters" placeholder="ABC123" maxlength="12" required></div>
       <div id="erro-login" class="aviso erro inteiro" hidden role="alert"></div>
-      <div class="acoes inteiro"><button class="btn" id="btn-entrar" type="submit">Entrar para votar</button></div>
+      <div class="acoes inteiro"><button class="btn grande" id="btn-entrar" type="submit">Entrar para votar</button></div>
     </form>
   </section>
 
@@ -64,17 +71,16 @@
     <div id="erro-voto" class="aviso erro" hidden role="alert"></div>
     <div class="acoes" style="justify-content:space-between">
       <button class="btn sec" id="r-voltar" type="button">Voltar</button>
-      <button class="btn" id="r-confirmar" type="button">Confirmar voto</button>
+      <button class="btn" id="r-confirmar" type="button">Confirmar voto ✓</button>
     </div>
   </section>
 
   <!-- 4. Fim -->
   <section class="cartao" id="v-fim" hidden>
     <div class="fim">
-      <div class="check" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <div class="confete" id="confete" aria-hidden="true"></div>
+      <div class="check" aria-hidden="true"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2>Voto registrado</h2>
-      <p class="nota">Comprovante de votação</p>
-      <span class="recibo-cod" id="f-recibo"></span>
       <p class="nota" id="f-retorno"></p>
       <button class="btn" id="f-sair" type="button">Encerrar</button>
     </div>
@@ -82,10 +88,10 @@
 </main>
 
 <!-- ======================= RESULTADOS ======================= -->
-<main class="largo" id="pg-resultados" hidden>
-  <div style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap">
-    <div style="display:grid;gap:6px">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="eyebrow">Painel de resultados</span><span class="status-pill" id="d-status"></span></div>
+<main class="largo gutter" id="pg-resultados" hidden>
+  <div class="titulo-painel">
+    <div>
+      <span class="tag" id="d-status-tag"><span class="ponto"></span><span id="d-status"></span></span>
       <h1 id="d-titulo">Votação</h1>
     </div>
     <div class="acoes"><span class="nota" id="d-atualizado"></span><button class="btn sec peq" id="d-atualizar" type="button">Atualizar</button></div>
@@ -152,13 +158,37 @@
       config = await API.get({ action: 'config' });
       $('v-titulo').textContent = config.titulo; $('titulo-topo').textContent = config.titulo;
       document.title = config.titulo;
-      const msg = { Aberta: 'Votação aberta', Fechada: 'Votação ainda não aberta', Encerrada: 'Votação encerrada' };
+      const msg = { Aberta: 'Votação aberta', Fechada: 'Ainda não começou', Encerrada: 'Votação encerrada' };
       $('v-status-txt').textContent = msg[config.status];
+      $('v-status').className = 'tag ' + config.status;
+      faixa(config.titulo, msg[config.status]);
       const aberta = config.status === 'Aberta';
       $('btn-entrar').disabled = !aberta;
       if (!aberta) { $('erro-login').className = 'aviso info inteiro'; $('erro-login').textContent = config.status === 'Encerrada' ? 'A votação terminou. Veja o resultado na aba Resultados.' : 'A votação ainda não começou. Volte no horário divulgado pela comissão.'; $('erro-login').hidden = false; }
     } catch (e) {
       $('aviso-geral').textContent = 'Não foi possível carregar a votação: ' + e.message; $('aviso-geral').hidden = false;
+    }
+  }
+
+  /* ---------- Faixa e confete ---------- */
+  function faixa(titulo, status) {
+    const f = $('faixa'); f.innerHTML = '';
+    const itens = [titulo, status, CFG.NOME_ORGANIZACAO || '', 'Seu voto conta'].filter(Boolean);
+    for (let i = 0; i < 6; i++) itens.forEach(t => { const s = document.createElement('span'); s.textContent = t; f.appendChild(s); });
+  }
+  faixa('Votação', 'Seu voto conta');
+
+  function confete() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = $('confete'); c.innerHTML = '';
+    const cores = ['#e5112b', '#160a0c', '#ffd23f', '#f08c98'];
+    for (let i = 0; i < 36; i++) {
+      const p = document.createElement('i');
+      p.style.left = Math.random() * 100 + '%';
+      p.style.background = cores[i % cores.length];
+      p.style.animationDelay = (Math.random() * .5) + 's';
+      p.style.animationDuration = (1.4 + Math.random()) + 's';
+      c.appendChild(p);
     }
   }
 
@@ -258,11 +288,10 @@
   $('r-confirmar').addEventListener('click', async () => {
     const btn = $('r-confirmar'); btn.disabled = true; btn.textContent = 'Registrando…'; $('erro-voto').hidden = true;
     try {
-      const r = await API.post({ action: 'votar', identificacao: sessao.identificacao, codigo: sessao.codigo, votos });
-      $('f-recibo').textContent = r.recibo;
-      mostrar('v-fim'); iniciarRetorno();
+      await API.post({ action: 'votar', identificacao: sessao.identificacao, codigo: sessao.codigo, votos });
+      mostrar('v-fim'); confete(); iniciarRetorno();
     } catch (err) { $('erro-voto').textContent = 'O voto não foi registrado: ' + err.message; $('erro-voto').hidden = false; }
-    finally { btn.disabled = false; btn.textContent = 'Confirmar voto'; }
+    finally { btn.disabled = false; btn.textContent = 'Confirmar voto ✓'; }
   });
 
   function iniciarRetorno() {
@@ -327,7 +356,7 @@
   function renderResultado(r) {
     $('d-titulo').textContent = r.titulo;
     $('d-status').textContent = r.status === 'Aberta' ? 'Em andamento' : r.status === 'Encerrada' ? 'Encerrada' : 'Não iniciada';
-    $('d-status').className = 'status-pill ' + r.status;
+    $('d-status-tag').className = 'tag ' + r.status;
     $('d-atualizado').textContent = 'Atualizado às ' + (r.atualizadoEm || '').slice(11, 16);
 
     const p = r.participacao, k = $('d-kpis'); k.innerHTML = '';
@@ -358,7 +387,7 @@
         const final = r.status === 'Encerrada';
         ver.classList.add(c.aprovado ? 'sim' : 'nao');
         ver.textContent = (c.aprovado ? (final ? 'Aprovado' : 'Atingindo a meta') : (final ? 'Não aprovado' : 'Abaixo da meta'));
-        const nm = document.createElement('p'); nm.style.margin = '0'; nm.style.fontWeight = '600'; nm.textContent = c.candidato.nome;
+        const nm = document.createElement('p'); nm.className = 'cand-unico'; nm.textContent = c.candidato.nome;
         barras.append(
           barra('Sim', c.votos['Sim'], base, 'f-sim', tr => {
             const m = document.createElement('div'); m.className = 'meta'; m.style.left = 'calc(' + r.percentual + '% - 1px)';
