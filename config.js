@@ -1,7 +1,7 @@
 // Configuração da votação — edite estes valores
 window.CONFIG = {
   // URL do App da Web do Apps Script DA PLANILHA DE VOTAÇÃO (termina em /exec)
-  API_URL: 'https://script.google.com/macros/s/AKfycbxdP3UNxKjP1_WOgJjYlxxGEkejvbVyHuhqVHAFoBwNbFN71yn4B_s2K6sk3gi6RH7ECA/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzSjbSJg2Fhem-uGOv7e_W3IXVJMiLgtoVkC4mAIb5OO9-OnMcoSaCOedWzJ_j8CjTOjA/exec',
 
   // Nome que aparece no topo
   NOME_ORGANIZACAO: 'ATECO UFSC',
@@ -14,5 +14,13 @@ window.CONFIG = {
   RETORNO_AUTOMATICO_SEG: 8,
 
   // Atualização automática do painel de resultados (segundos)
-  ATUALIZAR_PAINEL_SEG: 20
+  ATUALIZAR_PAINEL_SEG: 20,
+
+  // Quadro de resultados: tempo de cada cargo no "Passar sozinho" (segundos)
+  PASSAR_RESULTADOS_SEG: 10,
+  // true = o painel já abre passando sozinho (bom para telão)
+  PASSAR_AUTOMATICO: false,
+
+  // Som ao registrar o voto (true = liga, false = desliga)
+  SOM_CONFIRMAR: true
 };

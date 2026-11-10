@@ -29,7 +29,7 @@ Assim, quem está na assembleia e não vota conta contra a aprovação de candid
 3. Selecione a função **configurar** e clique em **Executar**. Autorize quando pedir. Serão criadas as abas:
 
    - **Config:** título, status (*Fechada / Aberta / Encerrada*), percentual mínimo e se mostra a parcial
-   - **Candidatos:** `Cargo | Nome | Número | Descrição`. Um cargo com uma única linha vira candidatura única (Sim/Não/Branco). Com duas ou mais linhas, vira disputa.
+   - **Candidatos:** `Cargo | Nome | Número | Descrição | Foto`. Um cargo com uma única linha vira candidatura única (Sim/Não/Branco). Com duas ou mais linhas, vira disputa.
    - **Votantes:** `Nome | Identificação | E-mail | Código | Presente | Votou em`
    - **Votos:** preenchida automaticamente. Não edite.
 
@@ -39,6 +39,17 @@ Assim, quem está na assembleia e não vota conta contra a aprovação de candid
    - Para enviar os códigos por e-mail, rode **enviarCodigosPorEmail**. Antes, se quiser que o e-mail leve o link da votação, crie em *Propriedades do script* a propriedade `LINK_SITE` com o endereço do site.
 7. Em **⚙ Configurações do projeto → Propriedades do script**, anote a `CHAVE_ADMIN`. Ela permite à comissão ver a parcial.
 8. Vá em **Implantar → Nova implantação → App da Web** e configure *Executar como: **Eu*** e *Quem pode acessar: **Qualquer pessoa***. Copie a URL que termina em `/exec`.
+
+### Fotos dos candidatos
+
+A coluna **Foto** aceita duas formas:
+
+- **Arquivo no GitHub (recomendado):** suba as fotos na pasta `votacao/fotos/` e escreva na planilha só o nome do arquivo, por exemplo `maria.jpg`.
+- **Link do Google Drive:** compartilhe a foto como *Qualquer pessoa com o link* e cole o link na célula.
+
+Prefira fotos quadradas, de uns 400×400 px. Se a célula ficar vazia ou o arquivo não for encontrado, aparecem as iniciais do candidato no lugar.
+
+> Se a sua planilha foi criada antes desta versão, escreva **Foto** na célula **E1** da aba Candidatos.
 
 ## Passo 2 · Front-end
 
@@ -56,6 +67,17 @@ Assim, quem está na assembleia e não vota conta contra a aprovação de candid
 3. **Acompanhar:** a aba *Resultados* mostra em tempo real quantos votaram e quantos estão presentes. O painel se atualiza a cada 20 segundos.
    - Durante a votação, os resultados ficam ocultos. A comissão vê a parcial digitando a `CHAVE_ADMIN` no painel. Para deixar a parcial pública, mude *Mostrar resultado parcial* para `Sim`.
 4. **Encerrar:** mude o **Status** para `Encerrada`. O resultado fica público no painel e novos votos são bloqueados.
+
+### Quadro de resultados
+
+Abaixo dos números de participação, os resultados aparecem **um cargo por vez**, num quadro grande:
+
+- **Navegar:** use as setas ou os pontinhos. No teclado, ← e →. No celular, deslize para o lado.
+- **▶ Passar sozinho:** troca de cargo a cada 10 segundos, bom para projetar num telão. O tempo fica em `PASSAR_RESULTADOS_SEG` no `config.js`. Para o painel já abrir passando sozinho, use `PASSAR_AUTOMATICO: true`.
+
+### Som
+
+Quando o voto é registrado, toca um som curto estilo urna. Ele é gerado pelo próprio navegador, sem arquivo de áudio. Para desligar, use `SOM_CONFIRMAR: false` no `config.js`.
 
 ### Modo urna (votação presencial)
 

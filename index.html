@@ -112,7 +112,16 @@
     </form>
   </section>
 
-  <div class="cargos-res" id="d-cargos"></div>
+  <section class="carrossel" id="d-carrossel" hidden aria-roledescription="carrossel" aria-label="Resultado por cargo">
+    <div class="car-barra">
+      <button class="seta" id="d-ant" type="button" aria-label="Cargo anterior">←</button>
+      <div class="pontos" id="d-pontos"></div>
+      <button class="seta" id="d-prox" type="button" aria-label="Próximo cargo">→</button>
+      <button class="btn sec peq" id="d-auto" type="button" aria-pressed="false">▶ Passar sozinho</button>
+    </div>
+    <div class="slide" id="d-slide" aria-live="polite"></div>
+  </section>
+  <p class="nota" id="d-vazio" hidden>Nenhum candidato cadastrado.</p>
 </main>
 
 <script src="config.js"></script>
@@ -192,6 +201,61 @@
     }
   }
 
+  /* ---------- Fotos dos candidatos ---------- */
+  // Aceita: nome de arquivo (pasta fotos/), link completo, ou link do Google Drive
+  function fotoURL(f) {
+    f = String(f || '').trim();
+    if (!f) return '';
+    const drive = f.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{20,})/);
+    if (drive) return 'https://lh3.googleusercontent.com/d/' + drive[1] + '=w400';
+    if (/^https?:\/\//i.test(f)) return f;
+    return 'fotos/' + f.replace(/^\/+/, '');
+  }
+  function iniciais(nome) {
+    return String(nome || '?').replace(/^exemplo:\s*/i, '').trim().split(/\s+/).filter(Boolean)
+      .map(p => p[0]).filter((_, i, a) => i === 0 || i === a.length - 1).join('').toUpperCase();
+  }
+  function avatar(c, tam) {
+    const a = document.createElement('span'); a.className = 'avatar ' + (tam || '');
+    a.setAttribute('aria-hidden', 'true');
+    const ini = document.createElement('span'); ini.textContent = iniciais(c.nome); a.appendChild(ini);
+    const url = fotoURL(c.foto);
+    if (url) {
+      const img = document.createElement('img'); img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer';
+      img.onload = () => a.classList.add('com-foto');
+      img.onerror = () => img.remove();
+      img.src = url; a.appendChild(img);
+    }
+    return a;
+  }
+
+  /* ---------- Som de confirmação (gerado no navegador, sem arquivo) ---------- */
+  let audioCtx = null;
+  function prepararSom() {
+    if (CFG.SOM_CONFIRMAR === false) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { audioCtx = null; }
+  }
+  function tocarSom() {
+    if (!audioCtx) return;
+    try {
+      const t0 = audioCtx.currentTime + 0.02;
+      const notas = [[1568, .07], [1976, .07], [1568, .07], [1976, .07], [1568, .07], [1976, .07], [2349, .32]];
+      const ganho = audioCtx.createGain(); ganho.gain.value = 0.12; ganho.connect(audioCtx.destination);
+      let t = t0;
+      notas.forEach(([f, d]) => {
+        const o = audioCtx.createOscillator(); o.type = 'square'; o.frequency.value = f;
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.005);
+        g.gain.setValueAtTime(1, t + d - 0.015); g.gain.linearRampToValueAtTime(0, t + d);
+        o.connect(g); g.connect(ganho); o.start(t); o.stop(t + d + 0.01);
+        t += d;
+      });
+    } catch (e) { /* sem som neste navegador */ }
+  }
+
   /* ---------- Fluxo de votação ---------- */
   function mostrar(id) { ['v-login', 'v-cedula', 'v-revisao', 'v-fim'].forEach(s => $(s).hidden = s !== id); window.scrollTo({ top: 0 }); }
 
@@ -226,9 +290,11 @@
       const c = cg.candidatos[0];
       $('c-instrucao').textContent = 'Candidatura única. Você aprova este nome para o cargo?';
       const box = document.createElement('div'); box.className = 'unico-cand';
+      const txt = document.createElement('div'); txt.className = 'uc-txt';
       const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = c.nome + (c.numero ? '  ·  ' + c.numero : '');
-      box.appendChild(nm);
-      if (c.descricao) { const d = document.createElement('span'); d.className = 'ds'; d.textContent = c.descricao; box.appendChild(d); }
+      txt.appendChild(nm);
+      if (c.descricao) { const d = document.createElement('span'); d.className = 'ds'; d.textContent = c.descricao; txt.appendChild(d); }
+      box.append(avatar(c, 'md'), txt);
       cand.appendChild(box);
       ops.classList.add('tres');
       cg.opcoes.forEach(o => ops.appendChild(botaoOpcao(cg, o, null, o === 'Branco')));
@@ -246,6 +312,7 @@
     const b = document.createElement('button'); b.type = 'button'; b.className = 'opcao' + (branco ? ' op-branco' : '');
     b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(votos[cg.cargo] === valor));
     const m = document.createElement('span'); m.className = 'marca-op'; b.appendChild(m);
+    if (info && !branco && info.nome) b.appendChild(avatar(info, 'sm'));
     const t = document.createElement('span'); t.className = 'txt';
     const nb = document.createElement('b'); nb.textContent = valor; t.appendChild(nb);
     if (info && info.descricao) { const sm = document.createElement('small'); sm.textContent = info.descricao; t.appendChild(sm); }
@@ -287,9 +354,10 @@
 
   $('r-confirmar').addEventListener('click', async () => {
     const btn = $('r-confirmar'); btn.disabled = true; btn.textContent = 'Registrando…'; $('erro-voto').hidden = true;
+    prepararSom();   // o navegador só libera áudio a partir de um clique
     try {
       await API.post({ action: 'votar', identificacao: sessao.identificacao, codigo: sessao.codigo, votos });
-      mostrar('v-fim'); confete(); iniciarRetorno();
+      tocarSom(); mostrar('v-fim'); confete(); iniciarRetorno();
     } catch (err) { $('erro-voto').textContent = 'O voto não foi registrado: ' + err.message; $('erro-voto').hidden = false; }
     finally { btn.disabled = false; btn.textContent = 'Confirmar voto ✓'; }
   });
@@ -367,50 +435,121 @@
     );
 
     $('d-bloqueado').hidden = r.liberado;
-    const box = $('d-cargos'); box.innerHTML = '';
-    if (!r.liberado) return;
-    if (!r.cargos.length) { const v = document.createElement('p'); v.className = 'nota'; v.textContent = 'Nenhum candidato cadastrado.'; box.appendChild(v); return; }
-
-    r.cargos.forEach(c => {
-      const card = document.createElement('section'); card.className = 'cartao';
-      const h = document.createElement('div'); h.className = 'res-head';
-      const tt = document.createElement('div'); tt.style.display = 'grid'; tt.style.gap = '2px';
-      const e = document.createElement('span'); e.className = 'eyebrow'; e.textContent = c.tipo === 'unico' ? 'Candidatura única' : c.candidatos.length + ' candidatos';
-      const h2 = document.createElement('h2'); h2.textContent = c.cargo;
-      tt.append(e, h2);
-      const ver = document.createElement('span'); ver.className = 'veredito';
-      const barras = document.createElement('div'); barras.className = 'barras';
-      const nota = document.createElement('p'); nota.className = 'nota';
-
-      if (c.tipo === 'unico') {
-        const base = p.presentes;
-        const final = r.status === 'Encerrada';
-        ver.classList.add(c.aprovado ? 'sim' : 'nao');
-        ver.textContent = (c.aprovado ? (final ? 'Aprovado' : 'Atingindo a meta') : (final ? 'Não aprovado' : 'Abaixo da meta'));
-        const nm = document.createElement('p'); nm.className = 'cand-unico'; nm.textContent = c.candidato.nome;
-        barras.append(
-          barra('Sim', c.votos['Sim'], base, 'f-sim', tr => {
-            const m = document.createElement('div'); m.className = 'meta'; m.style.left = 'calc(' + r.percentual + '% - 1px)';
-            m.title = 'Meta: ' + r.percentual + '% dos presentes'; tr.appendChild(m);
-          }),
-          barra('Não', c.votos['Não'], base, 'f-nao'),
-          barra('Branco', c.votos['Branco'], base, 'f-branco')
-        );
-        nota.textContent = 'Percentuais sobre ' + base + ' presentes. A linha vertical marca a meta de ' + r.percentual + '% de "Sim" (' + Math.ceil(base * r.percentual / 100) + ' votos).';
-        card.append(h, nm, barras, nota);
-      } else {
-        if (c.empate) { ver.classList.add('emp'); ver.textContent = 'Empate'; }
-        else if (c.vencedor) { ver.classList.add('sim'); ver.textContent = (r.status === 'Encerrada' ? 'Eleito: ' : 'Liderando: ') + c.vencedor; }
-        else { ver.hidden = true; }
-        c.candidatos.forEach((x, i) => barras.appendChild(barra(x.nome + (x.numero ? ' · ' + x.numero : ''), x.votos, c.total, 'f-cand' + (i === 0 && x.votos > 0 ? ' lider' : ''))));
-        barras.appendChild(barra('Branco', c.brancos, c.total, 'f-branco'));
-        nota.textContent = c.total + ' votos no cargo · ' + c.validos + ' em candidatos. Vence quem tiver mais votos.';
-        card.append(h, barras, nota);
-      }
-      h.append(tt, ver);
-      box.appendChild(card);
-    });
+    ultimo = r;
+    const temCargos = r.liberado && r.cargos && r.cargos.length;
+    $('d-carrossel').hidden = !temCargos;
+    $('d-vazio').hidden = !(r.liberado && r.cargos && !r.cargos.length);
+    if (!temCargos) return;
+    if (slideIdx >= r.cargos.length) slideIdx = 0;
+    renderSlide();
   }
+
+  /* ---------- Quadro de resultados: um cargo por vez ---------- */
+  let ultimo = null, slideIdx = 0, timerAuto = null;
+
+  function renderSlide() {
+    const r = ultimo, c = r.cargos[slideIdx], n = r.cargos.length, presentes = r.participacao.presentes;
+    const final = r.status === 'Encerrada';
+
+    // pontos de navegação
+    const pts = $('d-pontos'); pts.innerHTML = '';
+    r.cargos.forEach((cg, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'ponto-nav';
+      b.setAttribute('aria-label', cg.cargo); b.setAttribute('aria-current', String(i === slideIdx));
+      b.addEventListener('click', () => irPara(i, true)); pts.appendChild(b);
+    });
+    $('d-ant').disabled = $('d-prox').disabled = n < 2;
+
+    const s = $('d-slide'); s.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'slide-head';
+    const tt = document.createElement('div'); tt.className = 'slide-tit';
+    const e = document.createElement('span'); e.className = 'eyebrow';
+    e.textContent = 'Cargo ' + (slideIdx + 1) + ' de ' + n + ' · ' + (c.tipo === 'unico' ? 'Candidatura única' : c.candidatos.length + ' candidatos');
+    const h2 = document.createElement('h2'); h2.textContent = c.cargo;
+    tt.append(e, h2);
+    const ver = document.createElement('span'); ver.className = 'veredito';
+    head.append(tt, ver);
+    s.appendChild(head);
+
+    const corpo = document.createElement('div'); corpo.className = 'slide-corpo';
+    const nota = document.createElement('p'); nota.className = 'nota';
+
+    if (c.tipo === 'unico') {
+      ver.classList.add(c.aprovado ? 'sim' : 'nao');
+      ver.textContent = c.aprovado ? (final ? 'Aprovado' : 'Atingindo a meta') : (final ? 'Não aprovado' : 'Abaixo da meta');
+      const destaque = document.createElement('div'); destaque.className = 'destaque';
+      const nm = document.createElement('span'); nm.className = 'cand-unico'; nm.textContent = c.candidato.nome;
+      const pc = document.createElement('span'); pc.className = 'grande-pct';
+      pc.textContent = fmtPct(c.percentualSim || 0);
+      const pcl = document.createElement('span'); pcl.className = 'nota'; pcl.textContent = 'de "Sim" entre os presentes · meta ' + r.percentual + '%';
+      destaque.append(avatar(c.candidato, 'xl'), nm, pc, pcl);
+      const barras = document.createElement('div'); barras.className = 'barras';
+      barras.append(
+        barra('Sim', c.votos['Sim'], presentes, 'f-sim', tr => {
+          const m = document.createElement('div'); m.className = 'meta'; m.style.left = 'calc(' + r.percentual + '% - 1px)';
+          m.title = 'Meta: ' + r.percentual + '% dos presentes'; tr.appendChild(m);
+        }),
+        barra('Não', c.votos['Não'], presentes, 'f-nao'),
+        barra('Branco', c.votos['Branco'], presentes, 'f-branco')
+      );
+      nota.textContent = 'Percentuais sobre ' + presentes + ' presentes. A linha preta marca a meta (' + Math.ceil(presentes * r.percentual / 100) + ' votos "Sim").';
+      corpo.append(destaque, barras);
+    } else {
+      if (c.empate) { ver.classList.add('emp'); ver.textContent = 'Empate'; }
+      else if (c.vencedor) { ver.classList.add('sim'); ver.textContent = (final ? 'Eleito: ' : 'Liderando: ') + c.vencedor; }
+      else ver.hidden = true;
+      const lista = document.createElement('div'); lista.className = 'ranking';
+      c.candidatos.forEach((x, i) => {
+        const lider = i === 0 && x.votos > 0 && !c.empate;
+        const row = document.createElement('div'); row.className = 'rank' + (lider ? ' lider' : '');
+        const pos = document.createElement('span'); pos.className = 'pos'; pos.textContent = (i + 1) + 'º';
+        const info = barra(x.nome + (x.numero ? ' · ' + x.numero : ''), x.votos, c.total, 'f-cand' + (lider ? ' lider' : ''));
+        info.classList.add('rank-info');
+        row.append(pos, avatar(x, 'lg'), info);
+        lista.appendChild(row);
+      });
+      const br = document.createElement('div'); br.className = 'rank branco';
+      const sp = document.createElement('span'); sp.className = 'pos'; sp.textContent = '—';
+      const bInfo = barra('Branco', c.brancos, c.total, 'f-branco'); bInfo.classList.add('rank-info');
+      br.append(sp, bInfo); lista.appendChild(br);
+      nota.textContent = c.total + ' votos no cargo · ' + c.validos + ' em candidatos. Vence quem tiver mais votos.';
+      corpo.appendChild(lista);
+    }
+    s.append(corpo, nota);
+  }
+
+  function irPara(i, manual) {
+    if (!ultimo || !ultimo.cargos || !ultimo.cargos.length) return;
+    const n = ultimo.cargos.length;
+    slideIdx = (i + n) % n;
+    renderSlide();
+    if (manual && timerAuto) ligarAuto(true); // reinicia a contagem
+  }
+  $('d-ant').addEventListener('click', () => irPara(slideIdx - 1, true));
+  $('d-prox').addEventListener('click', () => irPara(slideIdx + 1, true));
+  document.addEventListener('keydown', e => {
+    if ($('pg-resultados').hidden || /input|textarea/i.test(document.activeElement.tagName)) return;
+    if (e.key === 'ArrowRight') irPara(slideIdx + 1, true);
+    if (e.key === 'ArrowLeft') irPara(slideIdx - 1, true);
+  });
+  // deslizar no celular
+  let toqueX = null;
+  $('d-slide').addEventListener('touchstart', e => { toqueX = e.touches[0].clientX; }, { passive: true });
+  $('d-slide').addEventListener('touchend', e => {
+    if (toqueX == null) return;
+    const dx = e.changedTouches[0].clientX - toqueX; toqueX = null;
+    if (Math.abs(dx) > 50) irPara(slideIdx + (dx < 0 ? 1 : -1), true);
+  });
+
+  function ligarAuto(on) {
+    clearInterval(timerAuto); timerAuto = null;
+    const seg = Number(CFG.PASSAR_RESULTADOS_SEG) || 10;
+    if (on) timerAuto = setInterval(() => { if (!document.hidden && !$('pg-resultados').hidden) irPara(slideIdx + 1); }, seg * 1000);
+    $('d-auto').setAttribute('aria-pressed', String(!!on));
+    $('d-auto').textContent = on ? '❚❚ Pausar' : '▶ Passar sozinho';
+  }
+  $('d-auto').addEventListener('click', () => ligarAuto(!timerAuto));
+  if (Number(CFG.PASSAR_RESULTADOS_SEG) > 0 && CFG.PASSAR_AUTOMATICO) ligarAuto(true);
 
   carregarConfig();
   rota();
