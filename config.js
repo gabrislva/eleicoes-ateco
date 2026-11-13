@@ -1,7 +1,7 @@
 // Configuração da votação — edite estes valores
 window.CONFIG = {
   // URL do App da Web do Apps Script DA PLANILHA DE VOTAÇÃO (termina em /exec)
-  API_URL: 'COLE_AQUI_A_URL_DO_APPS_SCRIPT',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwmau0yCnt3zyfwUPCuWWJ6l-cwAV1AHgiCGuIUHMdJMUOybI7715cR4ztTqDsAuUIopw/exec',
 
   // Nome que aparece no topo
   NOME_ORGANIZACAO: 'ATECO UFSC',
